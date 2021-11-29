@@ -21,7 +21,8 @@ locals {
 resource "libvirt_volume" "volume" {
   count  = local.num_vms 
   name   = "${local.instances[count.index]}.qcow2"
-  source = "https://cloud-images.ubuntu.com/releases/focal/release/ubuntu-20.04-server-cloudimg-amd64.img"
+  #source = "https://cloud-images.ubuntu.com/releases/focal/release/ubuntu-20.04-server-cloudimg-amd64.img"
+  source = "file:///data/isos/ubuntu-20.04-server-cloudimg-amd64.img"
   pool   = "VMs"
 }
 
@@ -64,20 +65,20 @@ resource "libvirt_domain" "vm" {
   }
 }
 
-resource "null_resource" "exec" {
-  count      = local.num_vms
-  depends_on = [libvirt_domain.vm]
-
-  provisioner "remote-exec" {
-    inline = [
-      "echo $HOSTNAME > ~/setup.txt",
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = "root"
-      private_key = file("~/.ssh/id_rsa")
-      host        = element(libvirt_domain.vm[count.index].network_interface[0].addresses, 0)
-    }
-  }
-}
+# resource "null_resource" "exec" {
+#   count      = local.num_vms
+#   depends_on = [libvirt_domain.vm]
+# 
+#   provisioner "remote-exec" {
+#     inline = [
+#       "echo $HOSTNAME > ~/setup.txt",
+#     ]
+# 
+#     connection {
+#       type        = "ssh"
+#       user        = "root"
+#       private_key = file("~/.ssh/id_rsa")
+#       host        = element(libvirt_domain.vm[count.index].network_interface[0].addresses, 0)
+#     }
+#   }
+# }

@@ -1,7 +1,7 @@
-output "hostnames" {
-  value = libvirt_domain.vm[*].name
-}
-
-output "ips" {
-  value = libvirt_domain.vm[*].network_interface[0].addresses
+variable "vms" {
+  type = list(object({
+    name   = string
+    memory = optional(number)
+    vcpu   = optional(number)
+  }))
 }
