@@ -19,11 +19,32 @@ locals {
 }
 
 resource "libvirt_volume" "volume" {
-  count  = local.num_vms 
-  name   = "${local.instances[count.index]}.qcow2"
+  count   = local.num_vms 
+  name    = "${local.instances[count.index]}.qcow2"
   #source = "https://cloud-images.ubuntu.com/releases/focal/release/ubuntu-20.04-server-cloudimg-amd64.img"
-  source = "file:///data/isos/ubuntu-20.04-server-cloudimg-amd64.img"
-  pool   = "VMs"
+  source  = "file:///data/isos/ubuntu-20.04-server-cloudimg-amd64.img"
+  pool    = "VMs"
+}
+
+data "template_file" "user_data" {
+  count    = local.num_vms
+  template = file("${path.module}/cloud_init.cfg")
+
+  vars = {
+    hostname = local.instances[count.index]
+  }
+}
+
+data "template_file" "network_config" {
+  template = file("${path.module}/network_config.cfg")
+}
+
+resource "libvirt_cloudinit_disk" "cloudinit" {
+  count          = local.num_vms
+  name           = "cloudinit-${local.instances[count.index]}.iso"
+  user_data      = data.template_file.user_data[count.index].rendered
+  network_config = data.template_file.network_config.rendered
+  pool           = libvirt_volume.volume[count.index].pool
 }
 
 resource "libvirt_domain" "vm" {
@@ -32,6 +53,8 @@ resource "libvirt_domain" "vm" {
   memory     = var.vms[count.index].memory == null ? 640 : var.vms[count.index].memory
   vcpu       = var.vms[count.index].vcpu   == null ? 2   : var.vms[count.index].vcpu
   qemu_agent = true
+  cloudinit  = libvirt_cloudinit_disk.cloudinit[count.index].id
+  depends_on = [libvirt_volume.volume]
 
   cpu {
     mode = "host-model"
@@ -64,21 +87,3 @@ resource "libvirt_domain" "vm" {
     listen_type = "address"
   }
 }
-
-# resource "null_resource" "exec" {
-#   count      = local.num_vms
-#   depends_on = [libvirt_domain.vm]
-# 
-#   provisioner "remote-exec" {
-#     inline = [
-#       "echo $HOSTNAME > ~/setup.txt",
-#     ]
-# 
-#     connection {
-#       type        = "ssh"
-#       user        = "root"
-#       private_key = file("~/.ssh/id_rsa")
-#       host        = element(libvirt_domain.vm[count.index].network_interface[0].addresses, 0)
-#     }
-#   }
-# }
