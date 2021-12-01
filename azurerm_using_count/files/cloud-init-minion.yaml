@@ -1,0 +1,48 @@
+# cloud-config
+resize_rootfs: true
+
+write_files:
+- content: |
+    vm_swap_size="${vm_swap_size}"
+    admin_username=${admin_username}
+    admin_password=${admin_password}
+    add_extra_disk=${add_extra_disk}
+  path: /run/scripts/vars
+  owner: root:root
+  permissions: "0640"
+  append: false
+- encoding: gzip+base64
+  content: |
+    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
+    p+SSYkZsg9V7DGvb1+Qf247UXQwNAAA=
+  path: /run/scripts/setup.sh
+  owner: root:root
+  permissions: "0755"
+  append: false
+
+runcmd:
+  - [bash, "/run/scripts/setup.sh"]

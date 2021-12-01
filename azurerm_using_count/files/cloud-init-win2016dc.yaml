@@ -1,0 +1,17 @@
+# cloud-config
+resize_rootfs: true
+
+write_files:
+- encoding: gzip+base64
+  content: |
+    H4sICJsngGECA3NldHVwLXdpbmRvd3MucHMxAJVRzU7CQBC+9ykmhaSn7WIgHkg8EIlJE0ECGi5c
+    1naU1XZ32Z1SufkOvqFP4qxEgifjZQ5fvr/J13PhIunBtUdFCJX2WJL1h2SOnSgIGxALRVtIy/Em
+    BTFXDULKsBNB1cRI5NwfHKMnbZqw4dR2praqgsgTjTbamqQfbOtLhCvItkQujKX06GweOc7bF9bn
+    2spOm8p2Qa6idPYtFcPBYCQWh6GYzKaXo7wJOkv6FQbSRhEToid3PFXb/CUuzN6+oljj4xJ3LRuB
+    ePAafiqKu5ZudI1wHhIfK0wgVde//lqR8iQW3pYYArA9vmGZ8wGxVpqdJ/65bdDQreacTBbwj6og
+    d61GAmms5yqclMUeS2zsHiG6wJOtK/TJETrO9vn+4eJw50ER5I1aHzD5Al7dgRz4AQAA
+  path: C:\\setup-salt.ps1
+  append: false
+
+runcmd:
+  - [powershell.exe, "C:\\setup-salt.ps1"]
