@@ -1,0 +1,39 @@
+# cloud-config
+resize_rootfs: true
+
+write_files:
+- content: |
+    vm_swap_size="${vm_swap_size}"
+    admin_username=${admin_username}
+    admin_password=${admin_password}
+    add_extra_disk=${add_extra_disk}
+  path: /run/scripts/vars
+  owner: root:root
+  permissions: "0640"
+  append: false
+- encoding: gzip+base64
+  content: |
+    H4sICLm8pmECA3NldHVwLXVidW50dS5zaACtVVtPGzsQft9fMU0RlY60WXreekmP0pJU6FCooH0C
+    hBx7krhsbGOPEyjw3+tZb0I4Ja162pdkPTP+5purnz6pRtpUIxGmRfEUjlBpj5KABWAjuUjF/uH7
+    8+He/qDXqby1VMnaRlVqo6kMSNF1azvpFHiFEt7A1tIa/n6z/ZwxB1eaQIqAIK0hb2sY6xoBr3Sg
+    UJxAOYaMm8GUNQhnsL3NFgQ7DLFvhQJC78XY+hnMhQ/FYsooJ/AkA0RTBem1o1CxGs5egbIQakQH
+    z/nbYBFs9BK/N2YXn50ShOCEvBATDIVwBOU1lJcQGw3b7OogRsmpQVpYf5GCcmKka00aA2izlBco
+    pxbKFEbnnTVjPYlem8lS2+12oVNIQfD69eBwmFJWIcmc1PzbleNJV1UvXpQqOyzbq6Vs4FhftKKX
+    cJOFL6E1VndFgmW6x5xPCAvhIAZm0P8aPYLCuU5ZGNVWbqKaDfe1iVfQn6ChTPqmCKig1NAJ1RHm
+    bKacXHSHqSqCeuZR6XXVySEuhGiwmPAmpA82GvpotaFe96+NqtNqZui04tC4l37FwcBwko7Tzf/S
+    XdP8EmW+cay/4oe3vZ2Nmq2b+eyc+Z6HJLj7CX4/ks0N2bJSiewjwg08rwPhTFINHgMJT7AQNdcy
+    2wT03ADFXeGRelv/pBHcukmfd1DiJey0s8d90TmBw3/hrAO3tyvBsJ9mezcJ1wfi8yiVJsLYpwFH
+    o3JXPVM4Yj7Q/ldLNQSsecccWJOKiV5I0nN8BrcQYprZ1px3S5kttTXrM5rjezChEy8UFruDt3v9
+    g/Ph0eHBp8HBbs88cAD3F7RJeanrZsuloZq5GtkJnBYAcz3jUS3J2jpAjFqBTx7TjksATviZ9WUk
+    nXSzNEHMR7vmXDoeHYZI5gmfQFuyjt2W5IUJznoqp0QupM1RSvSkx5oRAgQ7poXwWDpvHSswMK9Z
+    y0lGX8MkbcMvlxDC1IkQlsW7H+C9HBSTWG6xPLb/v74fo58gRIOoUm8+shtdYxCMcKpZ9U1fQtth
+    YY1cX32JgZjbUrlaKatuxXy7zfaqT+8N2g23qsOPTEj9yUZvO68tePoWqXVwLb7GgMNrmyJHl58O
+    Nfp9Au88sucHLyhZaHuXU552/RqfYXqew5QJZQ4g0txJBmHZOkxmSjbK6Xfv8O/zPsJRgkw+M7fO
+    6pzd+uZYfAMdNqZ/hggAAA==
+  path: /run/scripts/setup.sh
+  owner: root:root
+  permissions: "0755"
+  append: false
+
+runcmd:
+  - [bash, "/run/scripts/setup.sh"]

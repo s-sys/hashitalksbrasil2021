@@ -21,16 +21,15 @@ network: {config: disabled}
 EOF
 
 # Setup swap using Azure device block
-# ResourceDisk.Format=y
-# ResourceDisk.Filesystem=ext4
-# ResourceDisk.MountPoint=/mnt/resource
-# ResourceDisk.MountOptions=None
-# ResourceDisk.EnableSwap=y
-# ResourceDisk.SwapSizeMB=${vm_swap_size}
 echo -ne "Configuring Azure Linux Agent... "
+{
+sed -i "s/ResourceDisk.Format=n/ResourceDisk.Format=y/" /etc/waagent.conf
+sed -i "s/ResourceDisk.MountPoint=.*/ResourceDisk.MountPoint=\/mnt\/swapfile/" /etc/waagent.conf
 sed -i "s/ResourceDisk.EnableSwap=n/ResourceDisk.EnableSwap=y/" /etc/waagent.conf
 sed -i "s/ResourceDisk.SwapSizeMB=0/ResourceDisk.SwapSizeMB=${vm_swap_size}/" /etc/waagent.conf
+sed -i "s/AutoUpdate.Enabled=n/AutoUpdate.Enabled=y/" /etc/waagent.conf
 systemctl restart walinuxagent.service
+}
 ret=$?
 [ ${ret} -eq 0 ] && echo "[ OK ]" || echo "[ FAILED ]"
 
