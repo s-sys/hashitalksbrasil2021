@@ -4,6 +4,10 @@
 
 # .tfstate files
 *.tfstate.*
+terraform.tfstate*
 
 # Crash log files
 crash.log
+
+# Azurerm configuration
+*azure*/terraform.tfvars
