@@ -1,15 +1,13 @@
-output "labs_network_public_ips" {
+output "public_ips" {
   description = "Public IP of network interface of VMs"
-  value       = {
-                  for k, v in azurerm_public_ip.my_public_ip
-                    : k => v.ip_address
-                }
+  value       = tomap({
+    for k, j in azurerm_public_ip.my_public_ip: j.name => j.ip_address
+  })
 }
 
-output "labs_network_private_ips" {
+output "private_ips" {
   description = "Private IP of network interface of VMs"
-  value       = {
-                  for k, v in azurerm_network_interface.my_network_interface_vm
-                    : k => element(v.private_ip_addresses, 0)
-                }
+  value       = tomap({
+    for k, j in azurerm_network_interface.my_network_interface_vm: j.name => element(j.private_ip_addresses, 0)
+  })
 }

@@ -6,7 +6,6 @@ write_files:
     vm_swap_size="${vm_swap_size}"
     admin_username=${admin_username}
     admin_password=${admin_password}
-    add_extra_disk=${add_extra_disk}
   path: /run/scripts/vars
   owner: root:root
   permissions: "0640"

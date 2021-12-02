@@ -1,135 +1,27 @@
-#resource_group = "hashitalksbrasil2021"
+#resource_group = "hashitalks-azure-count"
 location       = "centralus"
 admin_username = "azureroot"
 admin_password = "Passw0rd123"
 
 # Network
 #vnet_name   = "vnet"
-vnet_addr    = "10.0.0.0/16"
+vnet_addr = "10.0.0.0/16"
 #subnet_name = "subnet"
-subnet_addr  = "10.0.1.0/24"
+subnet_addr = "10.0.1.0/24"
 
-# Storage account
-storage_account = "account:STORAGE"
-storage_tier    = "Standard"
-storage_repl    = "LRS"
-
-vms = [
-  {
-    name            = "instance01"
-    size            = "Standard_B1ms"
-    image           = {
-      publisher = "Canonical"
-      offer     = "0001-com-ubuntu-server-focal-daily"
-      sku       = "20_04-daily-lts-gen2"
-      version   = "20.04.202110150"
-    }
-    add_pub_ip      = true
-    pub_ip_persist  = true
-    add_boot_diag   = true
-    disk_type       = "StandardSSD_LRS"
-    add_extra_disk  = false
-    disk_size       = 20
-    net_accel       = false
-    cloudinit       = "files/cloud-init-ubuntu.yaml"
-    swap_size       = 1024
-  },
-  {
-    name            = "instance02"
-    size            = "Standard_B1ms"
-    image           = {
-      publisher = "Canonical"
-      offer     = "0001-com-ubuntu-server-focal-daily"
-      sku       = "20_04-daily-lts-gen2"
-      version   = "20.04.202110150"
-    }
-    add_pub_ip      = true
-    pub_ip_persist  = true
-    add_boot_diag   = true
-    disk_type       = "StandardSSD_LRS"
-    add_extra_disk  = false
-    disk_size       = 20
-    net_accel       = false
-    cloudinit       = "files/cloud-init-ubuntu.yaml"
-    swap_size       = 1024
-  },
-  {
-    name            = "instance03"
-    size            = "Standard_B1ms"
-    image           = {
-      publisher = "Canonical"
-      offer     = "0001-com-ubuntu-server-focal-daily"
-      sku       = "20_04-daily-lts-gen2"
-      version   = "20.04.202110150"
-    }
-    add_pub_ip      = true
-    pub_ip_persist  = true
-    add_boot_diag   = true
-    disk_type       = "StandardSSD_LRS"
-    add_extra_disk  = false
-    disk_size       = 20
-    net_accel       = false
-    cloudinit       = "files/cloud-init-ubuntu.yaml"
-    swap_size       = 1024
-  },
-  {
-    name            = "instance04"
-    size            = "Standard_B1ms"
-    image           = {
-      publisher = "Canonical"
-      offer     = "0001-com-ubuntu-server-focal-daily"
-      sku       = "20_04-daily-lts-gen2"
-      version   = "20.04.202110150"
-    }
-    add_pub_ip      = true
-    pub_ip_persist  = true
-    add_boot_diag   = true
-    disk_type       = "StandardSSD_LRS"
-    add_extra_disk  = false
-    disk_size       = 20
-    net_accel       = false
-    cloudinit       = "files/cloud-init-minion.yaml"
-    swap_size       = 1024
-  },
-  {
-    name            = "instance05"
-    size            = "Standard_B2s"
-    image           = {
-      publisher = "MicrosoftWindowsServer"
-      offer     = "WindowsServer"
-      sku       = "2016-Datacenter"
-      version   = "latest"
-    }
-    add_pub_ip      = true
-    pub_ip_persist  = true
-    add_boot_diag   = true
-    disk_type       = "StandardSSD_LRS"
-    add_extra_disk  = false
-    disk_size       = 20
-    net_accel       = false
-    cloudinit       = "files/cloud-init-win2016dc.yaml"
-    swap_size       = 1024
-  },
-  {
-    name            = "instance06"
-    size            = "Standard_B2s"
-    image           = {
-      publisher = "MicrosoftWindowsServer"
-      offer     = "WindowsServer"
-      sku       = "2016-Datacenter"
-      version   = "latest"
-    }
-    add_pub_ip      = true
-    pub_ip_persist  = true
-    add_boot_diag   = true
-    disk_type       = "StandardSSD_LRS"
-    add_extra_disk  = false
-    disk_size       = 20
-    net_accel       = false
-    cloudinit       = "files/cloud-init-win2016dc.yaml"
-    swap_size       = 1024
-  },
-]
+# VMs
+vm_count       = 6
+add_pub_ip     = true
+pub_ip_persist = true
+add_boot_diag  = true
+vm_image       = "Canonical:0001-com-ubuntu-server-focal-daily:20_04-daily-lts-gen2:20.04.202110150"
+vm_name_prefix = "instance"
+vm_size        = "Standard_B1ms"
+vm_disk_type   = "StandardSSD_LRS"
+vm_disk_size   = 40
+vm_net_accel   = false
+cloudinit      = "files/cloud-init-ubuntu.yaml"
+vm_swap_size   = "4096"
 
 # NSG rules
 #nsg_name  = "nsg"
@@ -138,7 +30,7 @@ nsg_rules = {
   direction                  = "Inbound,Inbound"
   access                     = "Allow,Allow"
   protocol                   = "Tcp,Tcp"
-  source_port_range          = "*,*"
+  source_port_range          = "*,*,*,*"
   destination_port_range     = "22,3389"
   source_address_prefix      = "*,*"
   destination_address_prefix = "*,*"

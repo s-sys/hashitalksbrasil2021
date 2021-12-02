@@ -21,6 +21,16 @@ provider "azurerm" {
   client_secret   = var.client_secret   == "" ? null : var.client_secret
 }
 
+provider "azurerm" {
+  features {}
+  
+  alias           = "dns"
+  subscription_id = var.dns_subscription_id == "" ? null : var.dns_subscription_id
+  tenant_id       = var.dns_tenant_id       == "" ? null : var.dns_tenant_id
+  client_id       = var.dns_client_id       == "" ? null : var.dns_client_id
+  client_secret   = var.dns_client_secret   == "" ? null : var.dns_client_secret
+}
+
 locals {
   # Azure defaults
   resource_group      = (
@@ -48,11 +58,7 @@ locals {
   storage_data         = split(":", var.storage_account)
   storage_account      = local.storage_data[0]
   storage_rg           = local.storage_data[1]
-  default_storage_name = (
-                           local.storage_account != ""
-                           ? local.storage_account
-                           : "diag${random_id.randomId.hex}"
-                         )
+  default_storage_name = local.storage_account != "" ? local.storage_account : "diag${random_id.randomId.hex}"
 
   # NSG
   nsg_size                       = length(var.nsg_rules["name"]) > 0 ? length(split(",", var.nsg_rules["name"])) : 0
@@ -65,33 +71,39 @@ locals {
   nsg_source_address_prefix      = local.nsg_size > 0 ? ([for source_address_prefix in split(",", var.nsg_rules["source_address_prefix"]) : trimspace(source_address_prefix)]) : null
   nsg_destination_address_prefix = local.nsg_size > 0 ? ([for destination_address_prefix in split(",", var.nsg_rules["destination_address_prefix"]) : trimspace(destination_address_prefix)]) : null
   nsg_priority_base              = 1000
+
+  # VMs
+  vm_count     = var.vm_count == null ? 1 : var.vm_count
+  vm_names     = {for i in range(local.vm_count): i => format("%s-%02d", var.vm_name_prefix, i + 1)}
+  vm_size      = var.vm_size      == null ? "Standard_D2_v3" : var.vm_size
+  vm_disk_type = var.vm_disk_type == null ? "Standard_LRS"   : var.vm_disk_type
+  vm_disk_size = var.vm_disk_size == ""   ? 100              : var.vm_disk_size
+  publisher    = length(split(":", var.vm_image)) != 4 ? "Canonical" : split(":", var.vm_image)[0]
+  offer        = length(split(":", var.vm_image)) != 4 ? "0001-com-ubuntu-minimal-focal-daily" : split(":", var.vm_image)[1]
+  sku          = length(split(":", var.vm_image)) != 4 ? "minimal-20_04-daily-lts-gen2" : split(":", var.vm_image)[2]
+  version      = length(split(":", var.vm_image)) != 4 ? "latest" : split(":", var.vm_image)[3]
+  vm_net_accel = var.vm_net_accel == null ? true : tobool(var.vm_net_accel)
 }
 
 # Set cloud-init file to run
 data "template_file" "config" {
-  for_each = {
-               for vm in var.vms
-                 : vm.name => vm
-             }
-  template = file(each.value.cloudinit)
+  template = file(var.cloudinit)
 
   vars = {
-    vm_swap_size   = each.value.swap_size
+    vm_swap_size   = var.vm_swap_size
     admin_username = var.admin_username
     admin_password = var.admin_password
-    add_extra_disk = each.value.add_extra_disk == true ? 1 : 0
   }
 }
 
 data "template_cloudinit_config" "config" {
-  for_each = {for vm in var.vms: vm.name => vm}
   gzip          = true
   base64_encode = true
 
   part {
     filename     = "init.cfg"
     content_type = "text/cloud-config"
-    content      = data.template_file.config[each.key].rendered
+    content      = data.template_file.config.rendered
   }
 }
 
@@ -103,7 +115,7 @@ data "azurerm_resource_group" "my_resource_group" {
 # Create a resource group if it doesn't exist
 resource "azurerm_resource_group" "my_resource_group" {
   count    = var.resource_group != "" ? 0 : 1
-  name     = "hashitalksbrasil2021"
+  name     = "hashitalks-azure-count"
   location = local.default_location
   tags     = var.tags
 }
@@ -144,19 +156,16 @@ resource "azurerm_subnet" "my_subnet" {
 
 # Create public IPs for VMs
 resource "azurerm_public_ip" "my_public_ip" {
-  for_each            = {
-                          for vm in var.vms
-                            : vm.name => vm
-                              if vm.add_pub_ip == true
-                        }
-  name                = format("%s_pub_interface", each.key)
+  count               = (
+                          local.vm_count > 0
+                            && tobool(var.add_pub_ip) == true
+                          ? local.vm_count
+                          : 0
+                        )
+  name                = format("%s-%02d_public_ip", var.vm_name_prefix, count.index + 1)
   location            = local.default_location
   resource_group_name = local.resource_group
-  allocation_method   = (
-                          each.value.pub_ip_persist == true
-                          ? "Static"
-                          : "Dynamic"
-                        )
+  allocation_method   = tobool(var.pub_ip_persist) == true ? "Static" : "Dynamic"
   tags                = var.tags
 }
 
@@ -198,31 +207,28 @@ resource "azurerm_network_security_rule" "my_nsg_rule" {
 
 # Create network interface for VMs
 resource "azurerm_network_interface" "my_network_interface_vm" {
-  for_each                      = {
-                                    for vm in var.vms
-                                      : vm.name => vm
-                                  }
-  name                          = format("%s_priv_interface", each.value.name)
+  count                         = local.vm_count > 0 ? local.vm_count : 0
+  name                          = format("%s-%02d_nic", var.vm_name_prefix, count.index + 1)
   location                      = local.default_location
   resource_group_name           = local.resource_group
-  enable_accelerated_networking = each.value.net_accel
+  enable_accelerated_networking = local.vm_net_accel
   tags                          = var.tags
 
   ip_configuration {
-    name                          = "${each.value.name}_nic_configuration"
+    name                          = "nic_configuration_${count.index + 1}"
     subnet_id                     = local.default_subnet_id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = (
-                                      each.value.add_pub_ip == true
-                                      ? azurerm_public_ip.my_public_ip[each.key].id
+                                      tobool(var.add_pub_ip) == true
+                                      ? azurerm_public_ip.my_public_ip[count.index].id
                                       : null
                                     )
   }
 }
 
 resource "azurerm_network_interface_security_group_association" "my_network_nsg_association" {
-  for_each                  = {for vm in var.vms: vm.name => vm}
-  network_interface_id      = azurerm_network_interface.my_network_interface_vm[each.key].id
+  count                     = local.vm_count > 0 ? local.vm_count : 0
+  network_interface_id      = azurerm_network_interface.my_network_interface_vm[count.index].id
   network_security_group_id = (
                                 length(var.nsg_name) > 0
                                 ? data.azurerm_network_security_group.my_nsg[0].id
@@ -254,7 +260,9 @@ data "azurerm_storage_account" "my_storage_account" {
 # Create storage account for boot diagnostics
 resource "azurerm_storage_account" "my_storage_account" {
   count                    = (
-                                 local.storage_account == ""
+                               local.vm_count > 0
+                                 && tobool(var.add_boot_diag) == true
+                                 && local.storage_account == ""
                                  && local.storage_rg == ""
                                ? 1 : 0
                              )
@@ -268,62 +276,61 @@ resource "azurerm_storage_account" "my_storage_account" {
 
 # Aditional disk
 resource "azurerm_managed_disk" "vm_extra_disk" {
-  for_each             = {
-                           for vm in var.vms
-                             : vm.name => vm
-                               if vm.add_extra_disk == true
-                         }
-  name                 = format("%s_data_disk", each.value.name)
+  count                = (
+                           local.vm_count > 0
+                             && tonumber(var.vm_disk_size) > 0
+                           ? local.vm_count
+                           : 0
+                         )
+  name                 = format("%s-%02d_data_disk", var.vm_name_prefix, count.index + 1)
   location             = local.default_location
   resource_group_name  = local.resource_group
-  storage_account_type = each.value.disk_type
+  storage_account_type = local.vm_disk_type
   create_option        = "Empty"
-  disk_size_gb         = each.value.disk_size
+  disk_size_gb         = local.vm_disk_size
+  depends_on           = [azurerm_linux_virtual_machine.vm]
   tags                 = var.tags
 }
 
 resource "azurerm_virtual_machine_data_disk_attachment" "vm_extra_disk_attach" {
-  for_each           = {
-                         for vm in var.vms
-                           : vm.name => vm
-                             if vm.add_extra_disk == true
-                       }
-  managed_disk_id    = azurerm_managed_disk.vm_extra_disk[each.key].id
-  virtual_machine_id = azurerm_linux_virtual_machine.vm[each.key].id
+  count              = (
+                         local.vm_count > 0
+                           && tonumber(var.vm_disk_size) > 0
+                         ? local.vm_count
+                         : 0
+                       )
+  managed_disk_id    = azurerm_managed_disk.vm_extra_disk[count.index].id
+  virtual_machine_id = azurerm_linux_virtual_machine.vm[count.index].id
   lun                = 1
   caching            = "ReadWrite"
 }
 
-# Create virtual machines for labs
+# Create virtual machine instances
 resource "azurerm_linux_virtual_machine" "vm" {
-  for_each                        = {
-                                      for vm in var.vms
-                                        : vm.name => vm
-                                          if length(regexall(".*Windows.*", vm.image.offer)) == 0
-                                    }
-  name                            = each.key
+  count                           = local.vm_count
+  name                            = local.vm_names[count.index]
   location                        = local.default_location
   resource_group_name             = local.resource_group
-  network_interface_ids           = [azurerm_network_interface.my_network_interface_vm[each.key].id]
-  size                            = each.value.size
-  custom_data                     = data.template_cloudinit_config.config[each.key].rendered
-  computer_name                   = each.key
+  network_interface_ids           = [azurerm_network_interface.my_network_interface_vm[count.index].id]
+  size                            = local.vm_size
+  custom_data                     = data.template_cloudinit_config.config.rendered
+  computer_name                   = local.vm_names[count.index]
   admin_username                  = var.admin_username
   admin_password                  = var.admin_password
   disable_password_authentication = false
   tags                            = var.tags
 
   os_disk {
-    name                 = format("%s_os_disk", each.key)
+    name                 = format("%s_os_disk", local.vm_names[count.index])
     caching              = "ReadWrite"
-    storage_account_type = each.value.disk_type
+    storage_account_type = local.vm_disk_type
   }
 
   source_image_reference {
-    publisher = each.value.image.publisher
-    offer     = each.value.image.offer
-    sku       = each.value.image.sku
-    version   = each.value.image.version
+    publisher = local.publisher
+    offer     = local.offer
+    sku       = local.sku
+    version   = local.version
   }
 
   admin_ssh_key {
@@ -333,49 +340,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
   boot_diagnostics {
     storage_account_uri = (
-                            each.value.add_boot_diag == true
-                            ? (local.storage_account != ""
-                                ? data.azurerm_storage_account.my_storage_account[0].primary_blob_endpoint
-                                : azurerm_storage_account.my_storage_account[0].primary_blob_endpoint
-                              )
-                            : null
-                          )
-  }
-}
-
-resource "azurerm_windows_virtual_machine" "vm" {
-  for_each              = {
-                            for vm in var.vms
-                              : vm.name => vm
-                                if length(regexall(".*Windows.*", vm.image.offer)) > 0
-                          }
-  name                  = each.key
-  location              = local.default_location
-  resource_group_name   = local.resource_group
-  network_interface_ids = [azurerm_network_interface.my_network_interface_vm[each.key].id]
-  size                  = each.value.size
-  custom_data           = data.template_cloudinit_config.config[each.key].rendered
-  computer_name         = each.key
-  admin_username        = var.admin_username
-  admin_password        = var.admin_password
-  tags                  = var.tags
-
-  os_disk {
-    name                 = format("%s_os_disk", each.key)
-    caching              = "ReadWrite"
-    storage_account_type = each.value.disk_type
-  }
-
-  source_image_reference {
-    publisher = each.value.image.publisher
-    offer     = each.value.image.offer
-    sku       = each.value.image.sku
-    version   = each.value.image.version
-  }
-
-  boot_diagnostics {
-    storage_account_uri = (
-                            each.value.add_boot_diag == true
+                            tobool(var.add_boot_diag) == true
                             ? (local.storage_account != ""
                                 ? data.azurerm_storage_account.my_storage_account[0].primary_blob_endpoint
                                 : azurerm_storage_account.my_storage_account[0].primary_blob_endpoint

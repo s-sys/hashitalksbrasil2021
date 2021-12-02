@@ -88,7 +88,7 @@ vms = [
     add_extra_disk  = false
     disk_size       = 20
     net_accel       = false
-    cloudinit       = "files/cloud-init-minion.yaml"
+    cloudinit       = "files/cloud-init-ubuntu.yaml"
     swap_size       = 1024
   },
   {

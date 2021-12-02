@@ -88,6 +88,78 @@ variable "storage_repl" {
   default     = "LRS"
 }
 
+variable "add_pub_ip" {
+  description = "Add public IP to VMs."
+  type        = bool
+  default     = false
+}
+
+variable "pub_ip_persist" {
+  description = "Set if public IP for VMs is Dynamic or Static."
+  type        = bool
+  default     = false
+}
+
+variable "add_boot_diag" {
+  description = "Add boot diagnostics to VMs."
+  type        = bool
+  default     = true
+}
+
+variable "vm_count" {
+  description = "Number of VMs to instanciate."
+  type        = number
+  default     = 1
+}
+
+variable "vm_image" {
+  description = "String with data about image to use."
+  type        = string
+  default     = "Canonical:0001-com-ubuntu-minimal-focal-daily:minimal-20_04-daily-lts-gen2:latest"
+}
+
+variable "vm_name_prefix" {
+  description = "Name prefix for VM name."
+  type        = string
+  default     = "instance"
+}
+
+variable "vm_size" {
+  description = "Azure size for VM."
+  type        = string
+  default     = "Standard_B1ms"
+}
+
+variable "vm_disk_type" {
+  description = "Azure disk size for VM."
+  type        = string
+  default     = "Standard_LRS"
+}
+
+variable "vm_disk_size" {
+  description = "Azure attached disk size for VM."
+  type        = string
+  default     = ""
+}
+
+variable "vm_net_accel" {
+  description = "Azure network acceleration for VM."
+  type        = bool
+  default     = true
+}
+
+variable "cloudinit" {
+  description = "Azure cloudinit file for VM."
+  type        = string
+  default     = "files/cloud-init.yaml"
+}
+
+variable "vm_swap_size" {
+  description = "Azure swap size for VM."
+  type        = string
+  default     = "2048"
+}
+
 variable "nsg_name" {
   description = "Network security group name."
   type        = string
@@ -112,29 +184,7 @@ variable "nsg_rules" {
 variable "tags" {
   description = "Tags for resources."
   type        = map(any)
-  default = {}
-}
-
-variable "vms" {
-  description = "List of VMs to create"
-  type             = list(object({
-    name           = string
-    size           = string
-    image          = object({
-      publisher    = string
-      offer        = string
-      sku          = string
-      version      = string
-    })
-    add_pub_ip     = bool
-    pub_ip_persist = bool
-    add_boot_diag  = bool
-    disk_type      = string
-    add_extra_disk = bool
-    disk_size      = number
-    net_accel      = bool
-    cloudinit      = string
-    swap_size      = number
-    })
-  )
+  default = {
+    activity = ""
+  }
 }

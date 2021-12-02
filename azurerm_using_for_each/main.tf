@@ -103,7 +103,7 @@ data "azurerm_resource_group" "my_resource_group" {
 # Create a resource group if it doesn't exist
 resource "azurerm_resource_group" "my_resource_group" {
   count    = var.resource_group != "" ? 0 : 1
-  name     = "hashitalksbrasil2021"
+  name     = "hashitalks-azure-for_each"
   location = local.default_location
   tags     = var.tags
 }
